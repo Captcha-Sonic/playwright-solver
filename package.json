@@ -1,0 +1,27 @@
+{
+  "name": "captchasonic-playwright-examples",
+  "version": "1.0.0",
+  "description": "Official CaptchaSonic integration examples for Playwright (TypeScript)",
+  "private": true,
+  "scripts": {
+    "recaptcha-v2": "ts-node examples/recaptcha-v2/token-method.ts",
+    "recaptcha-v3": "ts-node examples/recaptcha-v3/score-token.ts",
+    "turnstile": "ts-node examples/turnstile/turnstile-solver.ts",
+    "geetest": "ts-node examples/geetest/geetest-solver.ts",
+    "aws-waf": "ts-node examples/aws-waf/aws-waf-solver.ts",
+    "image-captcha": "ts-node examples/image-captcha/image-to-text.ts",
+    "extension": "ts-node examples/extension/extension-method.ts"
+  },
+  "dependencies": {
+    "captchasonic": "file:../../sonic-sdks/captchasonic-js",
+    "playwright": "^1.44.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
