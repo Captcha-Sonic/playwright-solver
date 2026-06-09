@@ -1,177 +1,85 @@
-# CaptchaSonic Playwright Examples
+# CaptchaSonic Playwright Examples — Solve Any Captcha in TypeScript
 
-> **Solve any CAPTCHA in your Playwright scripts with 3 lines of TypeScript.**
-
-Official integration examples for using [CaptchaSonic](https://captchasonic.com) with [Playwright](https://playwright.dev) in TypeScript/Node.js.
-
-[![npm](https://img.shields.io/npm/v/@captchasonic/sdk)](https://www.npmjs.com/package/@captchasonic/sdk)
-[![Node.js](https://img.shields.io/badge/node-18%2B-green)](https://nodejs.org)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0%2B-blue)](https://typescriptlang.org)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-
----
-
-## Why CaptchaSonic?
-
-```typescript
-// ❌ Other services — 20+ lines of manual polling:
-const res = await fetch('https://api.othercaptchaservice.com/createTask', { body: JSON.stringify({...}) });
-const taskId = (await res.json()).taskId;
-let token = '';
-while (!token) {
-  await new Promise(r => setTimeout(r, 3000));
-  const poll = await (await fetch('https://api.othercaptchaservice.com/getTaskResult', {...})).json();
-  if (poll.status === 'ready') token = poll.solution.gRecaptchaResponse;
-}
-// ... inject token ...
-
-// ✅ CaptchaSonic — 3 lines:
-import { CaptchaSonic } from '@captchasonic/sdk';
-
-const client = new CaptchaSonic('sonic_your_key_here');
-const result = await client.solveRecaptchaV2Token({ websiteURL: url, websiteKey: sitekey });
-const token = result.solution['gRecaptchaResponse'];
-```
-
-CaptchaSonic handles polling, retries, and error mapping internally — via a native **gRPC** connection with TypeScript types throughout.
-
----
-
-## Supported CAPTCHAs
-
-| CAPTCHA Type | Method | Example |
-|---|---|---|
-| **reCAPTCHA v2** | Token injection | [`examples/recaptcha-v2/`](examples/recaptcha-v2/) |
-| **reCAPTCHA v3** | Score token injection | [`examples/recaptcha-v3/`](examples/recaptcha-v3/) |
-| **Cloudflare Turnstile** | Token injection | [`examples/turnstile/`](examples/turnstile/) |
-| **Geetest v4** (nine-grid) | Grid classification + click | [`examples/geetest/`](examples/geetest/) |
-| **AWS WAF Captcha** | Grid classification + click | [`examples/aws-waf/`](examples/aws-waf/) |
-| **Image-to-Text / OCR** | Text extraction | [`examples/image-captcha/`](examples/image-captcha/) |
-| **Extension (auto-solve)** | Auto via browser extension | [`examples/extension/`](examples/extension/) |
-
----
+> **Automate captcha solving** with [Playwright](https://playwright.dev) and the [CaptchaSonic](https://captchasonic.com) API or browser extension. Works with reCAPTCHA v2, reCAPTCHA v3, Cloudflare Turnstile, Geetest v4, AWS WAF, and image captchas.
 
 ## Quick Start
 
-### 1. Install dependencies
-
 ```bash
+# 1. Clone and install
+git clone https://github.com/Captcha-Sonic/captchasonic-playwright-examples.git
+cd captchasonic-playwright-examples
 npm install
+
+# 2. Install Playwright browsers
 npx playwright install chromium
+
+# 3. Configure your API key
+cp .env.example .env
+# Edit .env and add your API key
+
+# 4. Run any example
+npm run recaptcha-v2
 ```
 
-### 2. Set your API key
-
-Get your key at [captchasonic.com](https://captchasonic.com) → Dashboard → API Keys.
-
-```bash
-export CAPTCHASONIC_API_KEY=sonic_your_key_here
-```
-
-### 3. Run an example
-
-```bash
-# reCAPTCHA v2 — token method (fastest, start here)
-npx ts-node examples/recaptcha-v2/token-method.ts
-
-# reCAPTCHA v3
-npx ts-node examples/recaptcha-v3/score-token.ts
-
-# Cloudflare Turnstile
-npx ts-node examples/turnstile/turnstile-solver.ts
-
-# Geetest v4
-npx ts-node examples/geetest/geetest-solver.ts
-
-# AWS WAF
-npx ts-node examples/aws-waf/aws-waf-solver.ts
-
-# Image-to-Text
-npx ts-node examples/image-captcha/image-to-text.ts
-```
+Get your API key at [captchasonic.com](https://captchasonic.com).
 
 ---
 
-## Integration Pattern
+## Supported Captcha Types
 
-All examples follow the same 3-step pattern:
-
-```typescript
-import { chromium } from 'playwright';
-import { CaptchaSonic } from '@captchasonic/sdk';
-
-// 1. Solve with CaptchaSonic SDK
-const client = new CaptchaSonic(process.env.CAPTCHASONIC_API_KEY!);
-const result = await client.solveRecaptchaV2Token({
-  websiteURL: 'https://example.com',
-  websiteKey: '6Le-wvkSAAAAAPBMRTvw0Q4Muexq9bi0DJwx_mJ-',
-});
-
-// 2. Extract token
-const token = result.solution['gRecaptchaResponse'];
-
-// 3. Inject into Playwright page
-await page.evaluate((t) => {
-  (document.getElementById('g-recaptcha-response') as HTMLTextAreaElement).value = t;
-}, token);
-```
+| Captcha | Token Method | Extension Method | Run Command |
+|---------|:---:|:---:|---|
+| reCAPTCHA v2 | ✅ | ✅ | `npm run recaptcha-v2` |
+| reCAPTCHA v3 | ✅ | ✅ | `npm run recaptcha-v3` |
+| Cloudflare Turnstile | ✅ | ✅ | `npm run turnstile` |
+| Geetest v4 | ✅ | ✅ | `npm run geetest` |
+| AWS WAF | ✅ | ✅ | `npm run aws-waf` |
+| Image Captcha (OCR) | ✅ | ✅ | `npm run image-captcha` |
+| Popular Captcha | ✅ | ✅ | `npm run popularcaptcha` |
 
 ---
 
-## Extension Method + `postMessage` Trigger
+## Two Ways to Solve
 
-CaptchaSonic's browser extension supports a **`postMessage` on-demand trigger** — fire captcha solving at exactly the right moment:
+### Token Method (`token-method.ts`)
 
-```typescript
-// Auto-solve when page loads (extension detects captcha automatically)
-// OR trigger manually when you're ready:
-await page.evaluate(() => {
-  window.postMessage({ type: 'capsonicSolve' }, '*');
-});
+Uses the CaptchaSonic API to solve captchas **server-side** — no visible browser interaction needed.
+
+```
+Your script → CaptchaSonic API → returns token → inject into page → submit
 ```
 
-This is especially important for multi-step forms where:
-1. You fill in the form fields first
-2. Then solve the captcha right before submit (tokens expire in 120s)
+Best for: **headless automation**, **CI/CD pipelines**, **maximum speed**
 
-See [`examples/extension/extension-method.ts`](examples/extension/extension-method.ts) for the full implementation.
+### Extension Method (`extension-method.ts`)
 
----
+Loads the CaptchaSonic **browser extension** into Chromium. The extension auto-detects and solves captchas as they appear.
 
-## Proxy Support
-
-```typescript
-const result = await client.solveRecaptchaV2Token({
-  websiteURL: 'https://example.com',
-  websiteKey: '...',
-  proxy: 'http://user:pass@host:port', // socks5 also supported
-});
+```
+Load extension → navigate to page → extension auto-solves → submit
 ```
 
----
+Best for: **visual debugging**, **complex pages with multiple captchas**, **stealth browsing**
 
-## TypeScript Support
+#### Extension Setup
 
-The CaptchaSonic SDK is TypeScript-first with complete types:
+1. **Build the extension** (or download from [Chrome Web Store](https://captchasonic.com/extension)):
+   ```bash
+   cd /path/to/captcha-sonic-ext
+   npm run build:chrome
+   ```
 
-```typescript
-import { CaptchaSonic, SonicError, TaskNotReadyError } from '@captchasonic/sdk';
+2. **Add the extension path** to your `.env` file:
+   ```env
+   CAPTCHASONIC_EXT_PATH=/path/to/captcha-sonic-ext/.output/chrome-mv3
+   ```
 
-const client = new CaptchaSonic('sonic_xxx'); // fully typed
+3. **Run any extension example**:
+   ```bash
+   npm run recaptcha-v2:ext
+   ```
 
-try {
-  const result = await client.solveTurnstile({
-    websiteURL: 'https://example.com',
-    websiteKey: '0x4AAAAAAA...',
-  });
-  // result is fully typed
-  const token: string = result.solution['token'];
-} catch (e) {
-  if (e instanceof TaskNotReadyError) {
-    console.log('Solve timed out');
-  }
-}
-```
+4. **First run only** — when Chromium opens, click the CaptchaSonic extension icon in the toolbar and paste your API key. The key is saved automatically for all future runs.
 
 ---
 
@@ -179,40 +87,123 @@ try {
 
 ```
 captchasonic-playwright-examples/
-├── package.json
-├── tsconfig.json
 ├── shared/
-│   └── helpers.ts                    # Shared utilities
-└── examples/
-    ├── recaptcha-v2/
-    │   └── token-method.ts           # ⭐ Start here
-    ├── recaptcha-v3/
-    │   └── score-token.ts
-    ├── turnstile/
-    │   └── turnstile-solver.ts
-    ├── geetest/
-    │   └── geetest-solver.ts
-    ├── aws-waf/
-    │   └── aws-waf-solver.ts
-    ├── image-captcha/
-    │   └── image-to-text.ts
-    └── extension/
-        └── extension-method.ts       # postMessage trigger demo
+│   └── helpers.ts                  # Reusable utilities
+├── examples/
+│   ├── recaptcha-v2/
+│   │   ├── token-method.ts         # API token solve
+│   │   └── extension-method.ts     # Extension auto-solve
+│   ├── recaptcha-v3/
+│   │   ├── token-method.ts
+│   │   └── extension-method.ts
+│   ├── turnstile/
+│   │   ├── token-method.ts
+│   │   └── extension-method.ts
+│   ├── geetest/
+│   │   ├── token-method.ts
+│   │   └── extension-method.ts
+│   ├── aws-waf/
+│   │   ├── token-method.ts
+│   │   └── extension-method.ts
+│   ├── image-captcha/
+│   │   ├── token-method.ts
+│   │   └── extension-method.ts
+│   └── popularcaptcha/
+│       ├── token-method.ts
+│       └── extension-method.ts
+├── package.json
+└── tsconfig.json
 ```
 
 ---
 
-## Links
+## All Commands
 
-- 🌐 [CaptchaSonic](https://captchasonic.com)
-- 📦 [npm: @captchasonic/sdk](https://www.npmjs.com/package/@captchasonic/sdk)
-- 📖 [Docs](https://docs.captchasonic.com)
-- 🤖 [n8n Node](https://www.npmjs.com/package/n8n-nodes-captchasonic)
-- 🔧 [MCP Server](https://www.npmjs.com/package/@captchasonic/mcp-server)
-- 🐍 [Selenium Python Examples](https://github.com/captchasonic/captchasonic-selenium-python-examples)
+```bash
+# Token method (API-based)
+npm run recaptcha-v2          # Solve reCAPTCHA v2
+npm run recaptcha-v3          # Solve reCAPTCHA v3
+npm run turnstile             # Solve Cloudflare Turnstile
+npm run geetest               # Solve Geetest v4
+npm run aws-waf               # Solve AWS WAF
+npm run image-captcha         # Solve image/text captcha (OCR)
+npm run popularcaptcha         # Solve popular captcha
+
+# Extension method (browser extension)
+npm run recaptcha-v2:ext
+npm run recaptcha-v3:ext
+npm run turnstile:ext
+npm run geetest:ext
+npm run aws-waf:ext
+npm run image-captcha:ext
+npm run popularcaptcha:ext
+```
+
+---
+
+## Environment Variables
+
+All variables are loaded from a `.env` file in the project root. Copy the template to get started:
+
+```bash
+cp .env.example .env
+```
+
+Then edit `.env`:
+
+```env
+# Required for all examples
+CAPTCHASONIC_API_KEY=sonic_your_key_here
+
+# Required for extension examples only
+CAPTCHASONIC_EXT_PATH=/path/to/captcha-sonic-ext/.output/chrome-mv3
+```
+
+| Variable | Required | Description |
+|---|:---:|---|
+| `CAPTCHASONIC_API_KEY` | ✅ | Your CaptchaSonic API key (`sonic_xxx`) |
+| `CAPTCHASONIC_EXT_PATH` | Extension only | Path to built CaptchaSonic Chrome extension |
+
+---
+
+## Adapt to Your Site
+
+Each example targets a public demo page. To use on your own site:
+
+1. Open any `token-method.ts`
+2. Change `SITE_URL` to your target page
+3. Change `SITE_KEY` to the captcha key on that page
+4. Run the script
+
+```typescript
+// Before
+const SITE_URL = 'https://recaptcha-demo.appspot.com/recaptcha-v2-checkbox.php';
+const SITE_KEY = '6LfW6wATAAAAAHLqO2pb8bDBahxlMxNdo9g947u9';
+
+// After — your site
+const SITE_URL = 'https://yoursite.com/login';
+const SITE_KEY = 'your-site-key-here';
+```
+
+---
+
+## Requirements
+
+- **Node.js** ≥ 18
+- **Playwright** — installed automatically via `npm install`
+- **CaptchaSonic API key** — [get one here](https://captchasonic.com)
+
+---
+
+## Resources
+
+- [CaptchaSonic Documentation](https://docs.captchasonic.com)
+- [CaptchaSonic Dashboard](https://captchasonic.com)
+- [Playwright Documentation](https://playwright.dev)
+- [Selenium Python Examples](https://github.com/Captcha-Sonic/captchasonic-selenium-python-examples)
 
 ---
 
 ## License
 
-MIT © [CaptchaSonic](https://captchasonic.com)
+MIT — free to use in commercial projects.

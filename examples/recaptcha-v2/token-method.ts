@@ -1,25 +1,16 @@
 /**
- * reCAPTCHA v2 — Token Method with CaptchaSonic TypeScript SDK
- * =============================================================
- * CaptchaSonic solves reCAPTCHA v2 server-side via its gRPC API
- * and returns a token. We inject it into the page — no clicking required.
+ * reCAPTCHA v2 — Token Method (Playwright + CaptchaSonic)
+ * ========================================================
+ * Solves reCAPTCHA v2 server-side via the CaptchaSonic API
+ * and injects the token into the hidden textarea.
  *
- * Why CaptchaSonic wins:
- *   - Native TypeScript SDK with full types
- *   - gRPC transport (zero HTTP overhead, keep-alive connection)
- *   - Single await vs manual polling loops
- *   - Works regardless of Chrome version or extension restrictions
- *
- * Setup:
- *   export CAPTCHASONIC_API_KEY=sonic_your_key_here
- *
- * Usage:
- *   npx ts-node examples/recaptcha-v2/token-method.ts
+ * Setup:  Add your API key to .env (see .env.example)
+ * Usage:  npm run recaptcha-v2
  */
 
 import { chromium } from 'playwright';
 import { CaptchaSonic } from 'captchasonic';
-import { getApiKey, injectRecaptchaToken, printBalance } from '../../shared/helpers';
+import { getApiKey, extractToken, injectRecaptchaToken, printBalance } from '../../shared/helpers';
 
 const SITE_URL = 'https://recaptcha-demo.appspot.com/recaptcha-v2-checkbox.php';
 const SITE_KEY = '6LfW6wATAAAAAHLqO2pb8bDBahxlMxNdo9g947u9';
@@ -29,8 +20,7 @@ async function main() {
   console.log('🔊 CaptchaSonic — reCAPTCHA v2 Token Method (Playwright)');
   console.log(`   Target: ${SITE_URL}\n`);
 
-  // ── Step 1: Solve with CaptchaSonic SDK ────────────────────────────────────
-  const client = new CaptchaSonic(apiKey);
+  const client = new CaptchaSonic(apiKey, { transport: 'http' });
   await printBalance(client);
 
   console.log('⏳ Solving reCAPTCHA v2...');
@@ -39,25 +29,19 @@ async function main() {
     websiteKey: SITE_KEY,
   });
 
-  const res = result as Record<string, unknown>;
-  const token: string = (res.solution as Record<string, string>)['gRecaptchaResponse'];
+  const token = extractToken(result);
   console.log(`  ✅ Token received (${token.length} chars)`);
-  // ── Step 2: Open Playwright browser and inject token ───────────────────────
-  const browser = await chromium.launch({ headless: false }); // set headless: true for CI
+
+  const browser = await chromium.launch({ headless: false });
   const page = await browser.newPage();
 
   try {
-    console.log('\n🌐 Opening browser...');
-    await page.goto(SITE_URL, { waitUntil: 'networkidle' });
-
-    // Inject the token into the hidden reCAPTCHA textarea
+    await page.goto(SITE_URL, { waitUntil: 'domcontentloaded' });
     await injectRecaptchaToken(page, token);
     console.log('  ✅ Token injected');
 
-    // Submit the form
     await page.click('button[type="submit"]');
     await page.waitForTimeout(3000);
-
     console.log('  ✅ Form submitted successfully!');
   } finally {
     await browser.close();

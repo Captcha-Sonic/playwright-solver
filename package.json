@@ -1,24 +1,32 @@
 {
   "name": "captchasonic-playwright-examples",
   "version": "1.0.0",
-  "description": "Official CaptchaSonic integration examples for Playwright (TypeScript)",
+  "description": "Official CaptchaSonic integration examples for Playwright (TypeScript) — solve reCAPTCHA, Turnstile, Geetest, AWS WAF, and image captchas with token API or browser extension",
   "private": true,
   "scripts": {
-    "recaptcha-v2": "ts-node examples/recaptcha-v2/token-method.ts",
-    "recaptcha-v3": "ts-node examples/recaptcha-v3/score-token.ts",
-    "turnstile": "ts-node examples/turnstile/turnstile-solver.ts",
-    "geetest": "ts-node examples/geetest/geetest-solver.ts",
-    "aws-waf": "ts-node examples/aws-waf/aws-waf-solver.ts",
-    "image-captcha": "ts-node examples/image-captcha/image-to-text.ts",
-    "extension": "ts-node examples/extension/extension-method.ts"
+    "recaptcha-v2": "tsx examples/recaptcha-v2/token-method.ts",
+    "recaptcha-v2:ext": "tsx examples/recaptcha-v2/extension-method.ts",
+    "recaptcha-v3": "tsx examples/recaptcha-v3/token-method.ts",
+    "recaptcha-v3:ext": "tsx examples/recaptcha-v3/extension-method.ts",
+    "turnstile": "tsx examples/turnstile/token-method.ts",
+    "turnstile:ext": "tsx examples/turnstile/extension-method.ts",
+    "geetest": "tsx examples/geetest/token-method.ts",
+    "geetest:ext": "tsx examples/geetest/extension-method.ts",
+    "aws-waf": "tsx examples/aws-waf/token-method.ts",
+    "aws-waf:ext": "tsx examples/aws-waf/extension-method.ts",
+    "image-captcha": "tsx examples/image-captcha/token-method.ts",
+    "image-captcha:ext": "tsx examples/image-captcha/extension-method.ts",
+    "popularcaptcha": "tsx examples/popularcaptcha/token-method.ts",
+    "popularcaptcha:ext": "tsx examples/popularcaptcha/extension-method.ts"
   },
   "dependencies": {
-    "captchasonic": "file:../../sonic-sdks/captchasonic-js",
+    "captchasonic": "^2.2.0",
+    "dotenv": "^17.4.2",
     "playwright": "^1.44.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
-    "ts-node": "^10.9.0",
+    "tsx": "^4.0.0",
     "typescript": "^5.0.0"
   },
   "engines": {

@@ -1,16 +1,16 @@
 /**
- * reCAPTCHA v3 — Score Token Method (Playwright)
- * ===============================================
+ * reCAPTCHA v3 — Token Method (Playwright + CaptchaSonic)
+ * ========================================================
  * reCAPTCHA v3 runs invisibly — no images, no checkbox.
  * CaptchaSonic returns a high-score token to inject.
  *
- * Usage:
- *   npx ts-node examples/recaptcha-v3/score-token.ts
+ * Setup:  Add your API key to .env (see .env.example)
+ * Usage:  npm run recaptcha-v3
  */
 
 import { chromium } from 'playwright';
 import { CaptchaSonic } from 'captchasonic';
-import { getApiKey, injectRecaptchaToken, printBalance } from '../../shared/helpers';
+import { getApiKey, extractToken, injectRecaptchaToken, printBalance } from '../../shared/helpers';
 
 const SITE_URL = 'https://recaptcha-demo.appspot.com/recaptcha-v3-request-scores.php';
 const SITE_KEY = '6LdyC2cUAAAAACGuDKpXeDorzUDWXmdqeg-xy696';
@@ -20,7 +20,7 @@ async function main() {
   console.log('🔊 CaptchaSonic — reCAPTCHA v3 Score Token (Playwright)');
   console.log(`   Target: ${SITE_URL}\n`);
 
-  const client = new CaptchaSonic(apiKey);
+  const client = new CaptchaSonic(apiKey, { transport: 'http' });
   await printBalance(client);
 
   console.log('⏳ Solving reCAPTCHA v3...');
@@ -29,24 +29,21 @@ async function main() {
     websiteKey: SITE_KEY,
   });
 
-  const res = result as Record<string, unknown>;
-  const token: string = (res.solution as Record<string, string>)['gRecaptchaResponse'];
+  const token = extractToken(result);
   console.log(`  ✅ Token received (${token.length} chars)`);
 
   const browser = await chromium.launch({ headless: false });
   const page = await browser.newPage();
 
   try {
-    await page.goto(SITE_URL, { waitUntil: 'networkidle' });
+    await page.goto(SITE_URL, { waitUntil: 'domcontentloaded' });
     await injectRecaptchaToken(page, token);
     console.log('  ✅ Token injected');
 
-    // Submit
     await page.evaluate(() => {
       const form = document.querySelector('form');
       if (form) form.submit();
     });
-
     await page.waitForTimeout(3000);
     console.log('  ✅ Submitted!');
   } finally {

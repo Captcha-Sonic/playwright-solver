@@ -1,11 +1,11 @@
 /**
- * Image-to-Text (OCR) Captcha Solver (Playwright)
- * ================================================
- * Extract a captcha image from the page, send to CaptchaSonic OCR,
- * and type the result into the input field.
+ * Image-to-Text (OCR) — Token Method (Playwright + CaptchaSonic)
+ * ================================================================
+ * Captures a captcha image from the page, sends to CaptchaSonic OCR,
+ * and types the result into the input field.
  *
- * Usage:
- *   npx ts-node examples/image-captcha/image-to-text.ts
+ * Setup:  Add your API key to .env (see .env.example)
+ * Usage:  npm run image-captcha
  */
 
 import { chromium, Page } from 'playwright';
@@ -26,7 +26,6 @@ async function getCaptchaImageBuffer(page: Page): Promise<Buffer> {
     const b64 = src.split(',')[1];
     return Buffer.from(b64, 'base64');
   }
-
   return imgEl.screenshot();
 }
 
@@ -35,14 +34,14 @@ async function main() {
   console.log('🔊 CaptchaSonic — Image-to-Text OCR Solver (Playwright)');
   console.log(`   Target: ${SITE_URL}\n`);
 
-  const client = new CaptchaSonic(apiKey);
+  const client = new CaptchaSonic(apiKey, { transport: 'http' });
   await printBalance(client);
 
   const browser = await chromium.launch({ headless: false });
   const page = await browser.newPage();
 
   try {
-    await page.goto(SITE_URL, { waitUntil: 'networkidle' });
+    await page.goto(SITE_URL, { waitUntil: 'domcontentloaded' });
     await page.waitForSelector(CAPTCHA_IMG_SELECTOR);
 
     const imgBuffer = await getCaptchaImageBuffer(page);
@@ -54,6 +53,9 @@ async function main() {
     const r = result as Record<string, unknown>;
     const typed = r.typedSolution as Record<string, unknown> | undefined;
     const captchaText: string = (typed?.text as Record<string, string[]> | undefined)?.texts?.[0] ?? '';
+    if (!captchaText) {
+      throw new Error(`OCR returned empty text. Full response: ${JSON.stringify(r)}`);
+    }
     console.log(`  ✅ Solved: '${captchaText}'`);
 
     await page.fill(CAPTCHA_INPUT_SELECTOR, captchaText);

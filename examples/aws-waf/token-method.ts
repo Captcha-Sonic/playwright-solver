@@ -1,10 +1,11 @@
 /**
- * AWS WAF Captcha Solver (Playwright)
- * ====================================
- * CaptchaSonic solves AWS WAF image challenges.
+ * AWS WAF — Token Method (Playwright + CaptchaSonic)
+ * ====================================================
+ * Captures AWS WAF captcha tiles, sends to CaptchaSonic for
+ * AI classification, and clicks the correct tiles.
  *
- * Usage:
- *   npx ts-node examples/aws-waf/aws-waf-solver.ts
+ * Setup:  Add your API key to .env (see .env.example)
+ * Usage:  npm run aws-waf
  */
 
 import { chromium, Page } from 'playwright';
@@ -12,15 +13,18 @@ import { CaptchaSonic } from 'captchasonic';
 import { getApiKey, printBalance, sleep } from '../../shared/helpers';
 
 const SITE_URL = 'https://efw47fpad9.execute-api.us-east-1.amazonaws.com/latest';
-const SITE_KEY = 'AQIDAHjcYu/GjX+QlghicBgQ/7bFaQZ+...'; // replace with real key
 
 async function getWafTiles(page: Page): Promise<{ tiles: Buffer[]; question: string }> {
   await page.waitForSelector('[id*="captcha"] img, .challenge-image', { timeout: 20000 });
 
   const question = await page.$eval(
     '[id*="captcha-header"], .challenge-header',
-    (el) => el.textContent?.trim() ?? 'grid:vehicles:cars'
-  ).catch(() => 'grid:vehicles:cars');
+    (el) => el.textContent?.trim() ?? ''
+  ).catch(() => '');
+
+  if (!question) {
+    console.warn('  ⚠️  Could not extract question text from page — check selectors');
+  }
 
   const tileEls = await page.$$('[id*="captcha"] img, .challenge-image img');
   const tiles: Buffer[] = [];
@@ -36,14 +40,14 @@ async function main() {
   console.log('🔊 CaptchaSonic — AWS WAF Captcha Solver (Playwright)');
   console.log(`   Target: ${SITE_URL}\n`);
 
-  const client = new CaptchaSonic(apiKey);
+  const client = new CaptchaSonic(apiKey, { transport: 'http' });
   await printBalance(client);
 
   const browser = await chromium.launch({ headless: false });
   const page = await browser.newPage();
 
   try {
-    await page.goto(SITE_URL, { waitUntil: 'networkidle' });
+    await page.goto(SITE_URL, { waitUntil: 'domcontentloaded' });
     const { tiles, question } = await getWafTiles(page);
     console.log(`  Question: '${question}'`);
     console.log(`  Tiles: ${tiles.length}`);
@@ -52,7 +56,8 @@ async function main() {
     const result = await client.solveAwsWaf(tiles, question);
 
     const r = result as Record<string, unknown>;
-    const objects: boolean[] = (r.typedSolution as Record<string, unknown> | undefined)?.grid as boolean[] ?? [];
+    const grid = (r.typedSolution as Record<string, unknown> | undefined)?.grid as Record<string, unknown> | undefined;
+    const objects: boolean[] = (grid?.objects as boolean[]) ?? [];
     const clickIndices = objects.map((v, i) => (v ? i : -1)).filter((i) => i >= 0);
     console.log(`  ✅ Click indices: ${clickIndices}`);
 
