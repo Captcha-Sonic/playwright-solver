@@ -1,14 +1,9 @@
-/**
- * Shared helper utilities for CaptchaSonic Playwright examples.
- */
+// Shared helper utilities for CaptchaSonic Playwright examples.
 
-import 'dotenv/config'; // Auto-load .env file
+import 'dotenv/config';
 import path from 'path';
 import { chromium, Page, BrowserContext } from 'playwright';
 
-// ── API Key ─────────────────────────────────────────────────────────────────
-
-/** Load API key from environment or throw a clear error. */
 export function getApiKey(): string {
   const key = process.env.CAPTCHASONIC_API_KEY ?? '';
   if (!key) {
@@ -21,19 +16,14 @@ export function getApiKey(): string {
   return key;
 }
 
-// ── Balance ─────────────────────────────────────────────────────────────────
-
-/** Print account balance to console. */
 export async function printBalance(client: any): Promise<void> {
   try {
     const balance: number = await client.getBalance();
-    console.log(`  💰 Balance: $${balance.toFixed(4)}`);
+    console.log(`Balance: $${balance.toFixed(4)}`);
   } catch (e) {
-    console.log(`  ⚠️  Could not fetch balance: ${(e as Error).message}`);
+    console.log(`Could not fetch balance: ${(e as Error).message}`);
   }
 }
-
-// ── Token Extraction ────────────────────────────────────────────────────────
 
 /**
  * Safely extract a token from the SDK result regardless of response shape.
@@ -53,9 +43,6 @@ export function extractToken(result: unknown): string {
   return token;
 }
 
-// ── Token Injection ─────────────────────────────────────────────────────────
-
-/** Inject a solved reCAPTCHA v2/v3 token into the page. */
 export async function injectRecaptchaToken(page: Page, token: string): Promise<void> {
   await page.evaluate((t) => {
     const ta = document.getElementById('g-recaptcha-response') as HTMLTextAreaElement | null;
@@ -69,7 +56,6 @@ export async function injectRecaptchaToken(page: Page, token: string): Promise<v
   }, token);
 }
 
-/** Inject a solved Cloudflare Turnstile token into the page. */
 export async function injectTurnstileToken(page: Page, token: string): Promise<void> {
   await page.evaluate((t) => {
     document.querySelectorAll<HTMLInputElement>('[name="cf-turnstile-response"]').forEach(
@@ -78,20 +64,17 @@ export async function injectTurnstileToken(page: Page, token: string): Promise<v
   }, token);
 }
 
-// ── Extension Helpers ───────────────────────────────────────────────────────
-
 /**
  * Launch Playwright with the CaptchaSonic browser extension loaded.
- * Returns a BrowserContext (not a Browser — Playwright requires
- * `launchPersistentContext` for extensions).
+ * Returns a BrowserContext (Playwright requires launchPersistentContext for extensions).
  */
 export async function launchWithExtension(): Promise<{ context: BrowserContext; page: Page }> {
   const extPath = process.env.CAPTCHASONIC_EXT_PATH ?? '';
   if (!extPath) {
     console.error(
-      '⚠️  CAPTCHASONIC_EXT_PATH not set.\n' +
-      '   Build the extension or download from: https://captchasonic.com/extension\n' +
-      '   Then add to your .env file: CAPTCHASONIC_EXT_PATH=/path/to/extension'
+      'CAPTCHASONIC_EXT_PATH not set.\n' +
+      'Build the extension or download from: https://captchasonic.com/extension\n' +
+      'Then add to your .env file: CAPTCHASONIC_EXT_PATH=/path/to/extension'
     );
     process.exit(1);
   }
@@ -138,8 +121,8 @@ export async function waitForExtensionSolve(page: Page, timeoutMs = 120_000): Pr
         const recaptcha = document.querySelector<HTMLTextAreaElement>('[name="g-recaptcha-response"]');
         if (recaptcha && recaptcha.value.length > 20) return true;
 
-        const hcaptcha = document.querySelector<HTMLTextAreaElement>('[name="h-captcha-response"]');
-        if (hcaptcha && hcaptcha.value.length > 20) return true;
+        const popularCaptcha = document.querySelector<HTMLTextAreaElement>('[name="h-captcha-response"]');
+        if (popularCaptcha && popularCaptcha.value.length > 20) return true;
 
         const turnstile = document.querySelector<HTMLInputElement>('[name="cf-turnstile-response"]');
         if (turnstile && turnstile.value.length > 20) return true;
@@ -154,7 +137,4 @@ export async function waitForExtensionSolve(page: Page, timeoutMs = 120_000): Pr
   return false;
 }
 
-// ── Utilities ───────────────────────────────────────────────────────────────
-
-/** Helper: sleep for N milliseconds. */
 export const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));

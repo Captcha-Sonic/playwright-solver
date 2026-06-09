@@ -1,12 +1,6 @@
-/**
- * Geetest v4 — Token Method (Playwright + CaptchaSonic)
- * ======================================================
- * Captures the Geetest nine-grid tiles, sends them to CaptchaSonic
- * for AI classification, and clicks the correct tiles.
- *
- * Setup:  Add your API key to .env (see .env.example)
- * Usage:  npm run geetest
- */
+// Geetest v4 — Token Method (Playwright + CaptchaSonic)
+// Setup: Add your API key to .env (see .env.example)
+// Usage: npm run geetest
 
 import { chromium, Page } from 'playwright';
 import { CaptchaSonic } from 'captchasonic';
@@ -21,10 +15,6 @@ async function getGeetestTiles(page: Page): Promise<{ tiles: Buffer[]; prompt: s
     '.geetest_tips_title',
     (el) => el.textContent?.trim() ?? ''
   ).catch(() => '');
-
-  if (!prompt) {
-    console.warn('  ⚠️  Could not extract prompt text — check selectors');
-  }
 
   const tileElements = await page.$$('.geetest_item_img img');
   const tiles: Buffer[] = [];
@@ -54,8 +44,8 @@ async function clickGeetestTiles(page: Page, indices: number[]): Promise<void> {
 
 async function main() {
   const apiKey = getApiKey();
-  console.log('🔊 CaptchaSonic — Geetest v4 Nine-Grid Solver (Playwright)');
-  console.log(`   Target: ${SITE_URL}\n`);
+  console.log('CaptchaSonic — Geetest v4 Nine-Grid Solver');
+  console.log(`Target: ${SITE_URL}\n`);
 
   const client = new CaptchaSonic(apiKey, { transport: 'http' });
   await printBalance(client);
@@ -67,15 +57,14 @@ async function main() {
     await page.goto(SITE_URL, { waitUntil: 'domcontentloaded' });
     await sleep(2000);
 
-    // Trigger Geetest challenge
     await page.click('.geetest_btn, button[class*="geetest"]').catch(() => {});
     await sleep(1500);
 
     const { tiles, prompt } = await getGeetestTiles(page);
-    console.log(`  Prompt: '${prompt}'`);
-    console.log(`  Tiles: ${tiles.length} images`);
+    console.log(`Prompt: '${prompt}'`);
+    console.log(`Tiles: ${tiles.length} images`);
 
-    console.log('⏳ Sending to CaptchaSonic...');
+    console.log('Sending to CaptchaSonic...');
     const result = await client.solveGeetest({
       type: 'nine',
       question: prompt,
@@ -87,13 +76,13 @@ async function main() {
     const grid = (r.typedSolution as Record<string, unknown> | undefined)?.grid as Record<string, unknown> | undefined;
     const objects: boolean[] = (grid?.objects as boolean[]) ?? [];
     const clickIndices = objects.map((v, i) => (v ? i : -1)).filter((i) => i >= 0);
-    console.log(`  ✅ Click indices: ${clickIndices}`);
+    console.log(`Click indices: ${clickIndices}`);
 
     await clickGeetestTiles(page, clickIndices);
 
     await page.click('.geetest_commit_tip, .geetest_next_tip').catch(() => {});
     await sleep(3000);
-    console.log('  ✅ Geetest solved!');
+    console.log('Geetest solved!');
   } finally {
     await browser.close();
   }

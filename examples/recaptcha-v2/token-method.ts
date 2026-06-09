@@ -1,12 +1,6 @@
-/**
- * reCAPTCHA v2 — Token Method (Playwright + CaptchaSonic)
- * ========================================================
- * Solves reCAPTCHA v2 server-side via the CaptchaSonic API
- * and injects the token into the hidden textarea.
- *
- * Setup:  Add your API key to .env (see .env.example)
- * Usage:  npm run recaptcha-v2
- */
+// reCAPTCHA v2 — Token Method (Playwright + CaptchaSonic)
+// Setup: Add your API key to .env (see .env.example)
+// Usage: npm run recaptcha-v2
 
 import { chromium } from 'playwright';
 import { CaptchaSonic } from 'captchasonic';
@@ -17,20 +11,20 @@ const SITE_KEY = '6LfW6wATAAAAAHLqO2pb8bDBahxlMxNdo9g947u9';
 
 async function main() {
   const apiKey = getApiKey();
-  console.log('🔊 CaptchaSonic — reCAPTCHA v2 Token Method (Playwright)');
-  console.log(`   Target: ${SITE_URL}\n`);
+  console.log('CaptchaSonic — reCAPTCHA v2 Token Method');
+  console.log(`Target: ${SITE_URL}\n`);
 
   const client = new CaptchaSonic(apiKey, { transport: 'http' });
   await printBalance(client);
 
-  console.log('⏳ Solving reCAPTCHA v2...');
+  console.log('Solving reCAPTCHA v2...');
   const result = await client.solveRecaptchaV2Token({
     websiteURL: SITE_URL,
     websiteKey: SITE_KEY,
   });
 
   const token = extractToken(result);
-  console.log(`  ✅ Token received (${token.length} chars)`);
+  console.log(`Token received (${token.length} chars)`);
 
   const browser = await chromium.launch({ headless: false });
   const page = await browser.newPage();
@@ -38,11 +32,11 @@ async function main() {
   try {
     await page.goto(SITE_URL, { waitUntil: 'domcontentloaded' });
     await injectRecaptchaToken(page, token);
-    console.log('  ✅ Token injected');
+    console.log('Token injected');
 
     await page.click('button[type="submit"]');
     await page.waitForTimeout(3000);
-    console.log('  ✅ Form submitted successfully!');
+    console.log('Form submitted successfully!');
   } finally {
     await browser.close();
   }

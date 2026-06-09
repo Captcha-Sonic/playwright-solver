@@ -1,12 +1,6 @@
-/**
- * Image-to-Text (OCR) — Token Method (Playwright + CaptchaSonic)
- * ================================================================
- * Captures a captcha image from the page, sends to CaptchaSonic OCR,
- * and types the result into the input field.
- *
- * Setup:  Add your API key to .env (see .env.example)
- * Usage:  npm run image-captcha
- */
+// Image-to-Text (OCR) — Token Method (Playwright + CaptchaSonic)
+// Setup: Add your API key to .env (see .env.example)
+// Usage: npm run image-captcha
 
 import { chromium, Page } from 'playwright';
 import { CaptchaSonic } from 'captchasonic';
@@ -31,8 +25,8 @@ async function getCaptchaImageBuffer(page: Page): Promise<Buffer> {
 
 async function main() {
   const apiKey = getApiKey();
-  console.log('🔊 CaptchaSonic — Image-to-Text OCR Solver (Playwright)');
-  console.log(`   Target: ${SITE_URL}\n`);
+  console.log('CaptchaSonic — Image-to-Text OCR Solver');
+  console.log(`Target: ${SITE_URL}\n`);
 
   const client = new CaptchaSonic(apiKey, { transport: 'http' });
   await printBalance(client);
@@ -45,9 +39,9 @@ async function main() {
     await page.waitForSelector(CAPTCHA_IMG_SELECTOR);
 
     const imgBuffer = await getCaptchaImageBuffer(page);
-    console.log(`  📸 Captured captcha (${imgBuffer.length} bytes)`);
+    console.log(`Captured captcha (${imgBuffer.length} bytes)`);
 
-    console.log('  ⏳ Sending to CaptchaSonic OCR...');
+    console.log('Sending to CaptchaSonic OCR...');
     const result = await client.solveOcr({ images: [imgBuffer] });
 
     const r = result as Record<string, unknown>;
@@ -56,12 +50,12 @@ async function main() {
     if (!captchaText) {
       throw new Error(`OCR returned empty text. Full response: ${JSON.stringify(r)}`);
     }
-    console.log(`  ✅ Solved: '${captchaText}'`);
+    console.log(`Solved: '${captchaText}'`);
 
     await page.fill(CAPTCHA_INPUT_SELECTOR, captchaText);
     await page.click(SUBMIT_SELECTOR);
     await page.waitForTimeout(3000);
-    console.log('  ✅ Submitted!');
+    console.log('Submitted!');
   } finally {
     await browser.close();
   }
