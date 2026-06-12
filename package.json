@@ -1,23 +1,20 @@
 {
   "name": "captchasonic-playwright-examples",
   "version": "1.0.0",
-  "description": "Official CaptchaSonic integration examples for Playwright (TypeScript) — solve reCAPTCHA, Turnstile, Geetest, AWS WAF, and image captchas with token API or browser extension",
+  "description": "Official CaptchaSonic integration examples for Playwright (TypeScript) — solve reCAPTCHA, Turnstile, Geetest, AWS WAF, and image captchas",
   "private": true,
   "scripts": {
     "recaptcha-v2": "tsx examples/recaptcha-v2/token-method.ts",
-    "recaptcha-v2:ext": "tsx examples/recaptcha-v2/extension-method.ts",
+    "recaptcha-v2:script": "tsx examples/recaptcha-v2/script-method.ts",
     "recaptcha-v3": "tsx examples/recaptcha-v3/token-method.ts",
-    "recaptcha-v3:ext": "tsx examples/recaptcha-v3/extension-method.ts",
     "turnstile": "tsx examples/turnstile/token-method.ts",
-    "turnstile:ext": "tsx examples/turnstile/extension-method.ts",
     "geetest": "tsx examples/geetest/token-method.ts",
-    "geetest:ext": "tsx examples/geetest/extension-method.ts",
+    "geetest:script": "tsx examples/geetest/script-method.ts",
     "aws-waf": "tsx examples/aws-waf/token-method.ts",
-    "aws-waf:ext": "tsx examples/aws-waf/extension-method.ts",
+    "aws-waf:script": "tsx examples/aws-waf/script-method.ts",
     "image-captcha": "tsx examples/image-captcha/token-method.ts",
-    "image-captcha:ext": "tsx examples/image-captcha/extension-method.ts",
     "popularcaptcha": "tsx examples/popularcaptcha/token-method.ts",
-    "popularcaptcha:ext": "tsx examples/popularcaptcha/extension-method.ts"
+    "popularcaptcha:script": "tsx examples/popularcaptcha/script-method.ts"
   },
   "dependencies": {
     "captchasonic": "^2.2.0",

@@ -2,3 +2,11 @@
 .playwright-user-data/
 node_modules/
 dist/
+
+# Internal specification
+SPEC.md
+
+# Test scripts
+test_payloads.py
+test-payloads.ts
+debug/

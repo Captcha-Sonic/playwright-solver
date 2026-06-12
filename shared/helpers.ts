@@ -1,8 +1,7 @@
 // Shared helper utilities for CaptchaSonic Playwright examples.
 
 import 'dotenv/config';
-import path from 'path';
-import { chromium, Page, BrowserContext } from 'playwright';
+import { Page } from 'playwright';
 
 export function getApiKey(): string {
   const key = process.env.CAPTCHASONIC_API_KEY ?? '';
@@ -25,10 +24,6 @@ export async function printBalance(client: any): Promise<void> {
   }
 }
 
-/**
- * Safely extract a token from the SDK result regardless of response shape.
- * Handles both `result.solution.gRecaptchaResponse` and `result.solution.token`.
- */
 export function extractToken(result: unknown): string {
   const r = result as Record<string, unknown>;
   const solution = (r.solution ?? r) as Record<string, string>;
@@ -62,79 +57,6 @@ export async function injectTurnstileToken(page: Page, token: string): Promise<v
       (el) => { el.value = t; }
     );
   }, token);
-}
-
-/**
- * Launch Playwright with the CaptchaSonic browser extension loaded.
- * Returns a BrowserContext (Playwright requires launchPersistentContext for extensions).
- */
-export async function launchWithExtension(): Promise<{ context: BrowserContext; page: Page }> {
-  const extPath = process.env.CAPTCHASONIC_EXT_PATH ?? '';
-  if (!extPath) {
-    console.error(
-      'CAPTCHASONIC_EXT_PATH not set.\n' +
-      'Build the extension or download from: https://captchasonic.com/extension\n' +
-      'Then add to your .env file: CAPTCHASONIC_EXT_PATH=/path/to/extension'
-    );
-    process.exit(1);
-  }
-
-  const userDataDir = path.join(process.cwd(), '.playwright-user-data');
-  const context = await chromium.launchPersistentContext(userDataDir, {
-    headless: false,
-    args: [
-      `--load-extension=${extPath}`,
-      `--disable-extensions-except=${extPath}`,
-      '--disable-features=DisableLoadExtensionCommandLineSwitch',
-    ],
-  });
-
-  const page = await context.newPage();
-  await page.waitForTimeout(2000);
-
-  return { context, page };
-}
-
-/**
- * Wait for the CaptchaSonic extension to auto-solve a captcha on the page.
- */
-export async function waitForExtensionSolve(page: Page, timeoutMs = 120_000): Promise<boolean> {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    try {
-      const solved = await page.evaluate(() => (window as any).captchaSolved === true);
-      if (solved) return true;
-
-      const recaptchaFrame = page.frame({ url: /recaptcha.*anchor/ });
-      if (recaptchaFrame) {
-        const cls = await recaptchaFrame.$eval('#recaptcha-anchor', (el) => el.className);
-        if (cls.includes('recaptcha-checkbox-checked')) return true;
-      }
-
-      const turnstileFrame = page.frame({ url: /challenges\.cloudflare\.com/ });
-      if (turnstileFrame) {
-        const success = await turnstileFrame.$('[data-testid="success"]').catch(() => null);
-        if (success) return true;
-      }
-
-      const hasToken = await page.evaluate(() => {
-        const recaptcha = document.querySelector<HTMLTextAreaElement>('[name="g-recaptcha-response"]');
-        if (recaptcha && recaptcha.value.length > 20) return true;
-
-        const popularCaptcha = document.querySelector<HTMLTextAreaElement>('[name="h-captcha-response"]');
-        if (popularCaptcha && popularCaptcha.value.length > 20) return true;
-
-        const turnstile = document.querySelector<HTMLInputElement>('[name="cf-turnstile-response"]');
-        if (turnstile && turnstile.value.length > 20) return true;
-
-        return false;
-      });
-      if (hasToken) return true;
-
-    } catch { /* keep polling */ }
-    await sleep(2000);
-  }
-  return false;
 }
 
 export const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
